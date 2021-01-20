@@ -3,6 +3,7 @@ import yargs = require('yargs');
 import {getToken, expired} from './iam';
 import axios from "axios";
 import { start } from 'repl';
+import { time } from 'console';
 
 
 // We will set these globals via the command line
@@ -14,6 +15,7 @@ let iamServer : string = 'https://iam.mcafee-cloud.com';
 let token : string;
 let period : number;
 let endpoint : string = 'https://api.mvision.mcafee.com';
+let timestamp : string = ''
 
 const fetchToken = async (current : string) => {
     let isExpired : boolean = await expired(current);
@@ -74,6 +76,7 @@ const main = async () => {
        c: { type: 'string', alias: 'clientid',demandOption : true, describe : 'client id (if using client credentials) or  username (if using ropg)' },  
        s: { type: 'string', alias: 'secret',demandOption : true, describe : 'client secret (if using client credentials) or  password (if using ropg)' },  
        p: { type: 'number',alias: 'period', demandOption: false, describe : 'poll internal in seconds'},
+       d: { type: 'string', alias: 'timestamp', demandOption: true, describe : 'Starting time value in ISO format, e.g. 2021-01-19T12:00:00'},
        k: { type: 'string', alias: 'api key', demandOption: true, describe : 'api key'}
    })
    .argv;
@@ -81,9 +84,10 @@ const main = async () => {
    clientId = argv.c;
    clientSecret = argv.s;
    period = argv.p ? argv.p * 1000 : 300000; // Default 5 minute interval
+   timestamp = argv.d   
    apiKey = argv.k
     // Start with an initial start point of 
-   pollEvents( new Date('2021-01-19T12:00:00'));
+   pollEvents( new Date(timestamp));
 
 }
 
