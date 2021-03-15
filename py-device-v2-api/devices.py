@@ -17,12 +17,14 @@ class ApiParameters:
         self.apiKey = apiKey
 
 
-iamParameters = IamParameters("","","","")
+iamParameters = IamParameters("iamUrl",
+    "clientId",
+    "clientSecret",
+    "epo.evt.r epo.device.r epo.tags.r epo.tags.w epo.device.w")
 
-apiParameters = ApiParameters("https://api.mvision.mcafee.com","")
+apiParameters = ApiParameters("https://api.mvision.mcafee.com","apiKey")
 
 def isValidToken(token) :
-    print("Validating IAM token")
     if token is None : return False
     decoded = jwt.decode(token, options = { "verify_signature" : False})
     expiry = decoded["exp"]
@@ -35,7 +37,6 @@ def isValidToken(token) :
 Checks the current token for expiry. If valid, returns token, else fetches a new one from IAM
 '''
 def getToken(current , iam : IamParameters) : 
-    print("Getting IAM token")
     if not isValidToken(current):
         params = { 'grant_type' : 'client_credentials', 'scope' : iam.scopes }
         response = requests.get(iam.iamUrl, auth=(iam.clientId, iam.clientSecret), params=params)
@@ -128,8 +129,8 @@ A tag can be assigned to a device either with a device api or with a tag api
 In this case,we use the device api to asign tags
 '''
 def tagDevice(token, iam : IamParameters , api : ApiParameters, deviceId, tagId):
-    print(f"Tagging device {deviceId} with tag {tagId}")
     url = api.apiUrl + "/epo/v2/devices/" + deviceId + "/relationships/assignedTags"
+    print(f"Tagging device {deviceId} with tag {tagId} and url {url}")
     token=getToken(token, iam)
     headers={ 
         "content-type" : "application/vnd.api+json", 
@@ -139,20 +140,42 @@ def tagDevice(token, iam : IamParameters , api : ApiParameters, deviceId, tagId)
     payload={
         "data" :  [
             {
-                "type" : "tag",
-                "id" : tagId
+                "id" : int(tagId),
+                "type" : "tags"
             }
         ]
     }
     response = requests.post(url, headers=headers, json=payload)
-    if response.status_code != 200:
-        print(f"status code {response.status_code} {response.json()}")
+    if response.status_code != 204:
+        print(f"status code {response.status_code} ")
         raise Exception("Unable to tag system")    
+
+def untagDevice(token, iam : IamParameters , api : ApiParameters, deviceId, tagId):
+    url = api.apiUrl + "/epo/v2/devices/" + deviceId + "/relationships/assignedTags"
+    print(f"untagging device {deviceId} with tag {tagId} and url {url}")
+    token=getToken(token, iam)
+    headers={ 
+        "content-type" : "application/vnd.api+json", 
+        "x-api-key" : api.apiKey,
+        "authorization" : "Bearer " + token
+    }        
+    payload={
+        "data" :  [
+            {
+                "id" : int(tagId),
+                "type" : "tags"
+            }
+        ]
+    }
+    response = requests.delete(url, headers=headers, json=payload)
+    if response.status_code != 204:
+        print(f"status code {response.status_code} ")
+        raise Exception("Unable to untag system")    
+
 
 t = getToken(None, iamParameters)
 print(f"Token is {t}")
 staleDevices = getDevicesByLastUpdate(t,iamParameters, apiParameters, cutoff)
 deviceId = staleDevices[0]["id"]
 tagId = getTagWithName(t, iamParameters, apiParameters, "deadagent")
-
-tagDevice(t,iamParameters,apiParameters, deviceId, tagId)
+untagDevice(t,iamParameters,apiParameters, deviceId, tagId)
