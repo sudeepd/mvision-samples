@@ -173,6 +173,22 @@ def untagDevice(token, iam : IamParameters , api : ApiParameters, deviceId, tagI
         raise Exception("Unable to untag system")    
 
 
+def deleteDevice(token, iam : IamParameters , api : ApiParameters, deviceId):
+    url = api.apiUrl + "/epo/v2/devices/" + deviceId
+    print(f"deleting device {deviceId}")
+    token=getToken(token, iam)
+    headers={ 
+        "content-type" : "application/vnd.api+json", 
+        "x-api-key" : api.apiKey,
+        "authorization" : "Bearer " + token
+    }        
+    response = requests.delete(url, headers=headers)
+    if response.status_code != 204:
+        print(f"status code {response.status_code} ")
+        raise Exception("Unable to untag system")    
+
+
+
 t = getToken(None, iamParameters)
 print(f"Token is {t}")
 staleDevices = getDevicesByLastUpdate(t,iamParameters, apiParameters, cutoff)
