@@ -41,7 +41,7 @@ const pollEvents = async (startTime : Date) => {
                 'page[limit]' : 1000
             }
             if (next) {
-                url = endpoint + next;
+                url = next;
                 params = {}
             }
 
